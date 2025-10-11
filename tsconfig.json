@@ -1,0 +1,13 @@
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "outDir": "./dist",       // Crucial: Tells TSC to output files to the 'dist' folder
+    "rootDir": "./src",       // Crucial: Tells TSC where to find your source '.ts' files
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"] // Crucial: Ensures all files in 'src' are included for compilation
+}

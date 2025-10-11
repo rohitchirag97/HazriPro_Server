@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+  //output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EMPLOYEE
+}
+
+model company {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  departments department[]
+  shifts      shift[]
+  employees   employee[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model department {
+  id        String     @id @default(uuid())
+  name      String
+  companyId String
+  company   company    @relation(fields: [companyId], references: [id])
+  employees employee[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model shift {
+  id        String     @id @default(uuid())
+  name      String
+  startTime String
+  endTime   String
+  companyId String
+  company   company    @relation(fields: [companyId], references: [id])
+  employees employee[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model employee {
+  id           String      @id @default(uuid())
+  fname        String
+  lname        String?
+  phone        String      @unique
+  role         Role        @default(EMPLOYEE)
+  faceId       String?
+  faceUrl      String?
+  shiftId      String?
+  shift        shift?      @relation(fields: [shiftId], references: [id])
+  departmentId String?
+  department   department? @relation(fields: [departmentId], references: [id])
+  companyId    String?
+  company      company?    @relation(fields: [companyId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
