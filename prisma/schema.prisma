@@ -14,6 +14,14 @@ enum Role {
   EMPLOYEE
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  HOLIDAY
+  WEEKEND
+}
+
 model company {
   id          String       @id @default(uuid())
   name        String
@@ -23,6 +31,7 @@ model company {
   employees   employee[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  attendance  attendance[]
 }
 
 model department {
@@ -48,19 +57,37 @@ model shift {
 }
 
 model employee {
-  id           String      @id @default(uuid())
+  id           String       @id @default(uuid())
   fname        String
   lname        String?
-  phone        String      @unique
-  role         Role        @default(EMPLOYEE)
+  phone        String       @unique
+  role         Role         @default(EMPLOYEE)
   faceId       String?
   faceUrl      String?
   shiftId      String?
-  shift        shift?      @relation(fields: [shiftId], references: [id])
+  shift        shift?       @relation(fields: [shiftId], references: [id])
   departmentId String?
-  department   department? @relation(fields: [departmentId], references: [id])
+  department   department?  @relation(fields: [departmentId], references: [id])
   companyId    String?
-  company      company?    @relation(fields: [companyId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  company      company?     @relation(fields: [companyId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  attendance   attendance[]
+}
+
+model attendance {
+  id            String           @id @default(uuid())
+  status        AttendanceStatus @default(PRESENT)
+  date          DateTime
+  inTime        DateTime?
+  outTime       DateTime?
+  overtimeHours Float?
+  lateHours     Float?
+  earlyHours    Float?
+  employeeId    String
+  employee      employee         @relation(fields: [employeeId], references: [id])
+  companyId     String
+  company       company          @relation(fields: [companyId], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
