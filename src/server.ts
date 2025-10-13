@@ -6,6 +6,7 @@ import companyRouter from "./routes/company.route";
 import departmentRouter from "./routes/department.route";
 import shiftRouter from "./routes/shift.route";
 import employeeRouter from "./routes/employee.route";
+import attendanceRouter from "./routes/attendance.route";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/department", departmentRouter);
 app.use("/api/v1/shift", shiftRouter);
 app.use("/api/v1/employee", employeeRouter);
+app.use("/api/v1/attendance", attendanceRouter);
 
 app.listen(port, () => {
   console.log(

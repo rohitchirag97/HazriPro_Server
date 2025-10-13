@@ -1,42 +1,51 @@
 import { Request, Response } from "express";
-import { prisma } from "../config/prisma";
+import { checkIn, checkOut, manualAttendance as manualAttendanceService } from "../services/attendance.service";
 
-export const startTimeAttendance = async (req: Request, res: Response) => {
+export const checkInAttendance = async (req: Request, res: Response) => {
   try {
-    const { employeeId, startTime } = req.body;
-    const companyId = req.user.companyId;
-    if (!companyId) {
-      return res.status(400).json({
-        success: false,
-        message: "Company ID is required",
-      });
-    }
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId, companyId },
-      include: {
-        shift: true,
-      },
+    const { employeeId } = req.body;
+    const data = await checkIn(employeeId, req.user.companyId);
+    return res.status(200).json({
+      success: true,
+      message: "Attendance checked in successfully",
+      data: data,
     });
-    if (!employee) {
-      return res.status(400).json({
-        success: false,
-        message: "Employee not found",
-      });
-    }
-    if (employee.shift?.startTime === startTime) {
-      const attendance = await prisma.attendance.create({
-        data: { 
-          employeeId, 
-          companyId, 
-          inTime: new Date(startTime),
-          date: new Date()
-        },
-      });
-      return res.status(200).json({
-        success: true,
-        message: "Entry time Attendance marked",
-      });
-    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+    });
+  }
+};
+
+export const checkOutAttendance = async (req: Request, res: Response) => {
+  try {
+    const { employeeId } = req.body;
+    const data = await checkOut(employeeId, req.user.companyId);
+    return res.status(200).json({
+      success: true,
+      message: "Attendance checked out successfully",
+      data: data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+    });
+  }
+};
+
+export const manualAttendance = async (req: Request, res: Response) => {
+  try {
+    const { employeeId, status } = req.body;
+    const data = await manualAttendanceService(employeeId, status);
+    return res.status(200).json({
+      success: true,
+      message: "Attendance updated successfully",
+      data: data,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,

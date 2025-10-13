@@ -15,8 +15,9 @@ enum Role {
 }
 
 enum AttendanceStatus {
-  PRESENT
   ABSENT
+  PRESENT
+  HALF_DAY
   LEAVE
   HOLIDAY
   WEEKEND
