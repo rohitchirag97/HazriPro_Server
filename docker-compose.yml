@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Note: PostgreSQL and Redis are hosted on cloud
+    # Make sure to set DATABASE_URL and REDIS_URL in your .env file

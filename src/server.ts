@@ -8,6 +8,7 @@ import departmentRouter from "./routes/department.route";
 import shiftRouter from "./routes/shift.route";
 import employeeRouter from "./routes/employee.route";
 import attendanceRouter from "./routes/attendance.route";
+import healthRouter from "./routes/health.route";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(cookieParser());
 const port = process.env.PORT || 8000;
 
 // Routes
+app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/company", companyRouter);
 app.use("/api/v1/department", departmentRouter);

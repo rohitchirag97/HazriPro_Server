@@ -133,6 +133,10 @@ backend/
 
 ## 🔌 API Endpoints
 
+### Health Check
+- `GET /api/v1/health` - Comprehensive health check (database, Redis, API status)
+- `GET /api/v1/health/simple` - Simple health check (for load balancers)
+
 ### Authentication
 - `POST /api/v1/auth/send-otp` - Send OTP to phone number
 - `POST /api/v1/auth/verify-otp` - Verify OTP and get token
@@ -187,19 +191,59 @@ The application supports multiple timezones with `date-fns-tz`. Default timezone
 ### Face Recognition
 AWS S3 integration for storing and managing employee face images for attendance verification.
 
+### Health Monitoring
+The API includes comprehensive health check endpoints for monitoring:
+
+- **Comprehensive Health Check** (`/api/v1/health`):
+  - Database connectivity status
+  - Redis connectivity status
+  - API uptime and version info
+  - Environment details
+  - Returns 200 for healthy, 503 for unhealthy
+
+- **Simple Health Check** (`/api/v1/health/simple`):
+  - Lightweight endpoint for load balancers
+  - Quick API availability check
+  - Always returns 200 if API is running
+
 ## 🚀 Deployment
+
+### Cloud Deployment (Recommended)
+
+1. **Set up your cloud services:**
+   - PostgreSQL database (AWS RDS, Google Cloud SQL, etc.)
+   - Redis instance (AWS ElastiCache, Google Cloud Memorystore, etc.)
+
+2. **Configure environment variables:**
+   ```env
+   DATABASE_URL="postgresql://username:password@your-cloud-db:5432/hazripro_db"
+   REDIS_URL="redis://your-cloud-redis:6379"
+   JWT_SECRET="your-jwt-secret-key"
+   NODE_ENV="production"
+   ```
+
+3. **Build and deploy with Docker:**
+   ```bash
+   # Build the production image
+   docker build -f Dockerfile.prod -t hazripro-backend .
+
+   # Run the container
+   docker run -p 8000:8000 --env-file .env hazripro-backend
+   ```
+
+4. **Run database migrations:**
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+### Local Development
 
 1. **Build the application**
    ```bash
    npm run build
    ```
 
-2. **Run database migrations in production**
-   ```bash
-   npx prisma migrate deploy
-   ```
-
-3. **Start the production server**
+2. **Start the production server**
    ```bash
    npm start
    ```
