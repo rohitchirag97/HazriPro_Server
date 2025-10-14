@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import authRouter from "./routes/auth.route";
 import companyRouter from "./routes/company.route";
@@ -14,6 +15,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const port = process.env.PORT || 8000;
 

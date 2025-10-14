@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import redis from "../config/redis";
 import { prisma } from "../config/prisma";
 import { generateToken } from "../services/jwt.service";
+import { removeToken, saveToken } from "../services/token.service";
 
 export const sendOTP = async (req: Request, res: Response) => {
   try {
@@ -61,14 +62,24 @@ export const verifyOTP = async (req: Request, res: Response) => {
       },
     });
     if (!user) {
-      const user = await prisma.employee.create({
+      const newUser = await prisma.employee.create({
         data: {
           phone: phone,
           fname: "New",
           lname: "User",
         },
       });
-      const token = generateToken(user.id);
+      const token = generateToken(newUser.id);
+      await saveToken(phone, token);
+      
+      // Set token in cookie
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+      
       return res.status(200).json({
         success: true,
         message: "User Logged In successfully",
@@ -76,6 +87,16 @@ export const verifyOTP = async (req: Request, res: Response) => {
       });
     }
     const token = generateToken(user.id);
+    await saveToken(phone, token);
+    
+    // Set token in cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
     return res.status(200).json({
       success: true,
       message: "User Logged In successfully",
@@ -97,6 +118,31 @@ export const getUser = async (req: Request, res: Response) => {
       success: true,
       message: "User fetched successfully",
       user: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+    });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+    
+    // Remove token from Redis
+    if (phone) {
+      await removeToken(phone);
+    }
+    
+    // Clear the cookie
+    res.clearCookie('token');
+    
+    return res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
     });
   } catch (error) {
     return res.status(500).json({

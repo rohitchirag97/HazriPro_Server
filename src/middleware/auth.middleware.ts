@@ -12,15 +12,19 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
+    let token: string | undefined;
+    
+    // Check for token in Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        message: "Authorization header missing or invalid",
-      });
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
-
-    const token = authHeader.split(" ")[1];
+    
+    // Check for token in cookies
+    if (!token && req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    
     if (!token) {
       return res.status(401).json({
         success: false,
