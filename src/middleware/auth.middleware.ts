@@ -14,13 +14,13 @@ export const authenticate = async (
   try {
     let token: string | undefined;
     
-    // Check for token in Authorization header
+    // Check for token in Authorization header (Mobile Apps - from localStorage)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
     }
     
-    // Check for token in cookies
+    // Check for token in cookies (Web Apps - automatic cookie handling)
     if (!token && req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
@@ -28,7 +28,7 @@ export const authenticate = async (
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Token not provided",
+        message: "Token not provided. Send token in Authorization header (mobile) or cookie (web)",
       });
     }
 

@@ -134,8 +134,10 @@ backend/
 ## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+- `POST /api/v1/auth/send-otp` - Send OTP to phone number
+- `POST /api/v1/auth/verify-otp` - Verify OTP and get token
+- `POST /api/v1/auth/logout` - Logout user
+- `GET /api/v1/auth/me` - Get current user info
 
 ### Company Management
 - `GET /api/company` - Get company details
@@ -165,6 +167,19 @@ backend/
 - `DELETE /api/shift/:id` - Delete shift
 
 ## ⚙️ Configuration
+
+### Authentication Support
+The API supports dual authentication methods for different client types:
+
+- **Web Applications**: 
+  - Tokens are automatically stored in HTTP-only cookies
+  - Browsers automatically send cookies with requests
+  - More secure against XSS attacks
+
+- **Mobile Applications**: 
+  - Tokens are stored in localStorage/AsyncStorage
+  - Must be sent in `Authorization: Bearer <token>` header
+  - Provides more control over token management
 
 ### Timezone Support
 The application supports multiple timezones with `date-fns-tz`. Default timezone is set to "Asia/Kolkata" but can be configured via environment variables.
