@@ -6,11 +6,14 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Build the application
 RUN npm run build
@@ -35,6 +38,10 @@ RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+
+# Copy Prisma schema and generated client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Change ownership of the app directory
 RUN chown -R nextjs:nodejs /app

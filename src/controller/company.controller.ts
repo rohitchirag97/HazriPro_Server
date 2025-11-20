@@ -8,7 +8,8 @@ export const createCompany = async (req: Request, res: Response) => {
     if (req.user.companyId) {
       return res.status(400).json({
         success: false,
-        message: "You are already a member of a company, only one company is allowed",
+        message:
+          "You are already a member of a company, only one company is allowed",
       });
     }
     if (!name || !slug) {
@@ -71,6 +72,50 @@ export const getUserCompanies = async (req: Request, res: Response) => {
       success: true,
       message: "Companies fetched successfully",
       companies: companies,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+    });
+  }
+};
+
+export const getCompanybyslug = async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const user = req.user;
+    if (!user.companyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Company ID is required",
+      });
+    }
+    if (user.company.slug !== slug) {
+      return res.status(400).json({
+        success: false,
+        message: "You are not authorized to access this company",
+      });
+    }
+    const company = await prisma.company.findUnique({
+      where: { slug },
+      include: {
+        employees: true,
+        departments: true,
+        shifts: true,
+      },
+    });
+    if (!company) {
+      return res.status(400).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Company fetched successfully",
+      company: company,
     });
   } catch (error) {
     return res.status(500).json({

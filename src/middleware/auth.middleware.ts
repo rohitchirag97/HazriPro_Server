@@ -51,6 +51,9 @@ export const authenticate = async (
 
     const user = await prisma.employee.findUnique({
       where: { id: decoded.userId },
+      include: {
+        company: true,
+      },
     });
 
     if (!user) {

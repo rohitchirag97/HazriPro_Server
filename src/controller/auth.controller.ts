@@ -60,6 +60,9 @@ export const verifyOTP = async (req: Request, res: Response) => {
       where: {
         phone: phone,
       },
+      include: {
+        company: true,
+      },
     });
     if (!user) {
       const newUser = await prisma.employee.create({
@@ -68,39 +71,43 @@ export const verifyOTP = async (req: Request, res: Response) => {
           fname: "New",
           lname: "User",
         },
+        include: {
+          company: true,
+        },
       });
       const token = generateToken(newUser.id);
       await saveToken(phone, token);
-      
+
       // Set token in cookie
-      res.cookie('token', token, {
+      res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
-      
+
       return res.status(200).json({
         success: true,
         message: "User Logged In successfully",
         token: token,
+        user: newUser,
       });
     }
     const token = generateToken(user.id);
-    await saveToken(phone, token);
-    
+
     // Set token in cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    
+
     return res.status(200).json({
       success: true,
       message: "User Logged In successfully",
       token: token,
+      user: user,
     });
   } catch (error) {
     return res.status(500).json({
@@ -131,15 +138,15 @@ export const getUser = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   try {
     const { phone } = req.body;
-    
+
     // Remove token from Redis
     if (phone) {
       await removeToken(phone);
     }
-    
+
     // Clear the cookie
-    res.clearCookie('token');
-    
+    res.clearCookie("token");
+
     return res.status(200).json({
       success: true,
       message: "User logged out successfully",

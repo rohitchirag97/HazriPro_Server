@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -11,5 +9,3 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    # Note: PostgreSQL and Redis are hosted on cloud
-    # Make sure to set DATABASE_URL and REDIS_URL in your .env file
