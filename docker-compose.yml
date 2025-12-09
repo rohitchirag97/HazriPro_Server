@@ -1,0 +1,39 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: always
+  app:
+    build: .
+    ports:
+      - ${PORT:-8000}:${PORT:-8000}
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=hazri-redis
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@hazri-postgres:5432/${POSTGRES_DB:-postgres}
+    depends_on:
+      - hazri-redis
+      - hazri-postgres 
+    restart: always
+  hazri-redis:
+    image: redis:alpine
+    ports:
+      - ${REDIS_PORT:-6379}:6379
+    volumes:
+      - ./redis:/data
+    restart: always
+  hazri-postgres:
+    image: postgres:alpine
+    ports:
+      - "5433:5432"
+    env_file:
+      - .env
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    restart: always
