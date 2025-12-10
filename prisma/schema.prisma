@@ -20,27 +20,41 @@ enum Status {
   INACTIVE
 }
 
+enum EmployeeType {
+  FULL_TIME
+  CONTRACT
+}
+
 model Employee {
-  id           String      @id @default(uuid())
-  employeeId   String      @unique @default(uuid())
+  id           String       @id @default(uuid())
+  employeeId   String       @unique @default(uuid())
   fname        String
   lname        String
-  phone        String      @unique
-  role         Role        @default(EMPLOYEE)
-  status       Status      @default(PENDING)
+  phone        String       @unique
+  salary       Float        @default(0.0)
+  employeeType EmployeeType @default(FULL_TIME)
+  role         Role         @default(EMPLOYEE)
+  status       Status       @default(PENDING)
+  isEmployee   Boolean      @default(true)
   departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   shiftId      String?
-  shift        Shift?      @relation(fields: [shiftId], references: [id])
+  shift        Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   companyId    String?
-  company      Company?    @relation(fields: [companyId], references: [id])
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  company      Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Company {
   id        String   @id @default(uuid())
   name      String
+  slug      String   @unique
+  address   String?
+  logo      String?
+  phone     String?
+  email     String?
+  website   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -56,7 +70,7 @@ model Shift {
   endTime   DateTime
   employees Employee[]
   companyId String
-  company   Company    @relation(fields: [companyId], references: [id])
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -66,7 +80,7 @@ model Department {
   name      String
   employees Employee[]
   companyId String
-  company   Company    @relation(fields: [companyId], references: [id])
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }

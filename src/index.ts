@@ -3,13 +3,20 @@ import "dotenv/config";
 import cors from "cors";
 import authRouter from "./routes/auth.routes.js";
 import { otpWorker } from "./utils/otp-worker.js";
+import companyRouter from "./routes/company.routes.js";
 
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    credentials: true,
+  })
+);
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/company", companyRouter);
 
 const port = process.env.PORT || 8000;
 
