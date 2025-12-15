@@ -1,23 +1,32 @@
+version: '3.8'
+
 services:
+  # 1. Nginx Proxy Manager (Handles 80/443, SSL, and Routing)
   nginx:
-    image: nginx:alpine
+    # Use the specialized image for easy SSL/Reverse Proxy
+    image: jc21/nginx-proxy-manager:latest 
+    container_name: nginx_proxy
     ports:
-      - 80:80
-      - 443:443
-      - 81:81
-    depends_on:
-      - app
+      - 80:80    # Public HTTP
+      - 443:443  # Public HTTPS
+      - 81:81    # Admin Web UI (access via http://VM_IP:81)
+    # depends_on is not needed if 'app' uses 'restart: always'
     restart: always
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
     networks:
       - hazri-network
+
+  # 2. Your Node.js Backend Application
   app:
-    build: rohitchirag97/hazripro-api:latest
+    # CRITICAL FIX: Use 'image:' to pull from Docker Hub
+    image: rohitchirag97/hazripro-api:latest 
     container_name: hazripro-api
-    ports:
-      - ${PORT:-8000}:${PORT:-8000}
+    # Only expose the port internally to the proxy
+    expose:
+      - ${PORT:-8000} 
+    # Remove public 'ports:' entry
     env_file:
       - .env
     environment:
@@ -29,23 +38,29 @@ services:
     restart: always
     networks:
       - hazri-network
+
+  # 3. Redis Cache Service (Internal Only)
   hazri-redis:
     image: redis:7-alpine
-    ports:
-      - ${REDIS_PORT:-6379}:6379
+    container_name: hazri-redis
+    # SECURITY FIX: REMOVED 'ports:' to keep it private
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # FIX: Correct volume mapping for redis
+      - redis_data:/data 
     restart: always
     networks:
       - hazri-network
+
+  # 4. PostgreSQL Database Service (Internal Only)
   hazri-postgres:
     image: postgres:16-alpine
-    ports:
-      - "5433:5432"
+    container_name: hazri-postgres
+    # SECURITY FIX: REMOVED 'ports:' and kept it private
     env_file:
       - .env
     volumes:
-      - redis_data:/data
+      # FIX: Correct volume mapping for postgres
+      - postgres_data:/var/lib/postgresql/data 
     restart: always
     networks:
       - hazri-network
