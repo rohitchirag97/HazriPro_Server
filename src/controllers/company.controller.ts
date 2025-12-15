@@ -6,21 +6,29 @@ import {
   createCompanyValidation,
   updateCompanyValidation,
 } from "../validations/company.validation.js";
-import { Role, Status, type Employee, type Company } from "../generated/prisma/client.js";
 import {
-  getCache,
-  setCache,
-  invalidateCompanyCache,
-  invalidateUserCache,
-  CACHE_KEYS,
-  CACHE_TTL,
-} from "../utils/cache.js";
+  Role,
+  Status,
+  type Employee,
+  type Company,
+  type Shift,
+  type Department,
+} from "../generated/prisma/client.js";
+
+type CompanyWithRelations = Company & {
+  employees: Employee[];
+  shifts: Shift[];
+  departments: Department[];
+};
 
 export const createCompany = async (req: Request, res: Response) => {
   try {
     const { name, slug, address, logo, phone, email, website, isEmployee } =
       await createCompanyValidation.parseAsync(req.body);
-    const user = req.user as Employee;
+    const user = req.user?.employee;
+    if (!user) {
+      return res.status(401).json({ message: "Employee not found" });
+    }
     if (user.companyId) {
       return res.status(400).json({
         message: "User already assigned to a company, please contact support",
@@ -56,9 +64,6 @@ export const createCompany = async (req: Request, res: Response) => {
       },
     });
 
-    // Invalidate user cache since their companyId changed
-    await invalidateUserCache(user.id);
-
     return res.status(200).json({
       message: "Company created successfully",
       data: { company: newCompany },
@@ -77,41 +82,26 @@ export const createCompany = async (req: Request, res: Response) => {
   }
 };
 
-type CompanyWithRelations = Company & {
-  employees: Employee[];
-  shifts: unknown[];
-  departments: unknown[];
-};
-
 export const getCompany = async (req: Request, res: Response) => {
   try {
-    const user = req.user as Employee;
+    const user = req.user?.employee;
+    if (!user) {
+      return res.status(401).json({ message: "Employee not found" });
+    }
     if (!user.companyId) {
       return res.status(400).json({
         message: "User is not assigned to a company, please contact support",
       });
     }
 
-    // Try cache first
-    const cacheKey = CACHE_KEYS.company(user.companyId);
-    let company = await getCache<CompanyWithRelations>(cacheKey);
-
-    if (!company) {
-      // Cache miss - fetch from database
-      company = await prisma.company.findUnique({
-        where: { id: user.companyId },
-        include: {
-          employees: true,
-          shifts: true,
-          departments: true,
-        },
-      });
-
-      if (company) {
-        // Store in cache
-        await setCache(cacheKey, company, CACHE_TTL.COMPANY);
-      }
-    }
+    const company = await prisma.company.findUnique({
+      where: { id: user.companyId },
+      include: {
+        employees: true,
+        shifts: true,
+        departments: true,
+      },
+    });
 
     return res.status(200).json({
       message: "Company fetched successfully",
@@ -127,32 +117,23 @@ export const getCompany = async (req: Request, res: Response) => {
 
 export const getCompanyBySlug = async (req: Request, res: Response) => {
   try {
-    const user = req.user as Employee;
+    const user = req.user?.employee;
+    if (!user) {
+      return res.status(401).json({ message: "Employee not found" });
+    }
     const { slug } = req.params;
     if (!slug) {
       return res.status(400).json({ message: "Slug is required" });
     }
 
-    // Try cache first
-    const cacheKey = CACHE_KEYS.companyBySlug(slug);
-    let company = await getCache<CompanyWithRelations>(cacheKey);
-
-    if (!company) {
-      // Cache miss - fetch from database
-      company = await prisma.company.findUnique({
-        where: { slug },
-        include: {
-          employees: true,
-          shifts: true,
-          departments: true,
-        },
-      });
-
-      if (company) {
-        // Store in cache
-        await setCache(cacheKey, company, CACHE_TTL.COMPANY);
-      }
-    }
+    const company = await prisma.company.findUnique({
+      where: { slug },
+      include: {
+        employees: true,
+        shifts: true,
+        departments: true,
+      },
+    });
 
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
@@ -176,7 +157,15 @@ export const getCompanyBySlug = async (req: Request, res: Response) => {
 
 export const updateCompany = async (req: Request, res: Response) => {
   try {
-    const user = req.user as Employee;
+    const user = req.user?.employee;
+    if (!user) {
+      return res.status(401).json({ message: "Employee not found" });
+    }
+    if (user.role !== Role.OWNER) {
+      return res.status(403).json({
+        message: "You are not authorized to update this company",
+      });
+    }
     const { slug } = req.params;
     const {
       name,
@@ -225,13 +214,6 @@ export const updateCompany = async (req: Request, res: Response) => {
       },
     });
 
-    // Invalidate company cache (both by id and old slug)
-    await invalidateCompanyCache(company.id, slug);
-    // If slug changed, also invalidate the new slug cache
-    if (newSlug && newSlug !== slug) {
-      await invalidateCompanyCache(company.id, newSlug);
-    }
-
     return res.status(200).json({
       message: "Company updated successfully",
       data: { company: updatedCompany },
@@ -252,7 +234,15 @@ export const updateCompany = async (req: Request, res: Response) => {
 
 export const deleteCompany = async (req: Request, res: Response) => {
   try {
-    const user = req.user as Employee;
+    const user = req.user?.employee;
+    if (!user) {
+      return res.status(401).json({ message: "Employee not found" });
+    }
+    if (user.role !== Role.OWNER) {
+      return res.status(403).json({
+        message: "You are not authorized to delete this company",
+      });
+    }
     const { slug } = req.params;
     if (!slug) {
       return res.status(400).json({ message: "Slug is required" });
@@ -268,7 +258,6 @@ export const deleteCompany = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: "User is not authorized to delete this company" });
     }
-    // Get all employee IDs before deletion to invalidate their caches
     const employees = await prisma.employee.findMany({
       where: { companyId: company.id },
       select: { id: true },
@@ -287,14 +276,6 @@ export const deleteCompany = async (req: Request, res: Response) => {
     await prisma.company.delete({
       where: { id: company.id },
     });
-
-    // Invalidate company cache
-    await invalidateCompanyCache(company.id, company.slug);
-
-    // Invalidate all employee caches since their companyId changed
-    await Promise.all(
-      employees.map((emp) => invalidateUserCache(emp.id))
-    );
 
     return res.status(200).json({
       message: "Company deleted successfully",

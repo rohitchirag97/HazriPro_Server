@@ -1,13 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../services/jwt.service.js";
-import { Status, type Employee } from "../generated/prisma/client.js";
+import { Status } from "../generated/prisma/client.js";
 import { prisma } from "../utils/prisma.js";
-import {
-  getCache,
-  setCache,
-  CACHE_KEYS,
-  CACHE_TTL,
-} from "../utils/cache.js";
+import type { UserWithRelations } from "../express.d.ts";
 
 export const authenticate = async (
   req: Request,
@@ -23,28 +18,26 @@ export const authenticate = async (
     return res.status(401).json({ message: "Invalid token" });
   }
 
-  // Try to get user from cache first
-  const cacheKey = CACHE_KEYS.user(decoded.userId);
-  let user = await getCache<Employee>(cacheKey);
-
-  if (!user) {
-    // Cache miss - fetch from database
-    user = await prisma.employee.findUnique({
-      where: { id: decoded.userId },
-    });
-
-    if (user) {
-      // Store in cache for future requests
-      await setCache(cacheKey, user, CACHE_TTL.USER);
-    }
-  }
+  // Fetch user from database
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId },
+    include: {
+      employee: true,
+    },
+  });
 
   if (!user) {
     return res.status(401).json({ message: "User not found" });
   }
-  if (user.status !== Status.ACTIVE) {
+
+  // Set both user and employee in request
+  req.user = user;
+  req.employee = user.employee || null;
+
+  // Check if employee is active (if employee exists)
+  if (user.employee && user.employee.status !== Status.ACTIVE) {
     return res.status(401).json({ message: "User is not active" });
   }
-  req.user = user;
+
   next();
 };

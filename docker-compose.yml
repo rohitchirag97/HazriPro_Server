@@ -3,13 +3,19 @@ services:
     image: nginx:alpine
     ports:
       - 80:80
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - 443:443
+      - 81:81
     depends_on:
       - app
     restart: always
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - hazri-network
   app:
-    build: .
+    build: rohitchirag97/hazripro-api:latest
+    container_name: hazripro-api
     ports:
       - ${PORT:-8000}:${PORT:-8000}
     env_file:
@@ -19,21 +25,35 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@hazri-postgres:5432/${POSTGRES_DB:-postgres}
     depends_on:
       - hazri-redis
-      - hazri-postgres 
+      - hazri-postgres
     restart: always
+    networks:
+      - hazri-network
   hazri-redis:
-    image: redis:alpine
+    image: redis:7-alpine
     ports:
       - ${REDIS_PORT:-6379}:6379
     volumes:
-      - ./redis:/data
+      - postgres_data:/var/lib/postgresql/data
     restart: always
+    networks:
+      - hazri-network
   hazri-postgres:
-    image: postgres:alpine
+    image: postgres:16-alpine
     ports:
       - "5433:5432"
     env_file:
       - .env
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - redis_data:/data
     restart: always
+    networks:
+      - hazri-network
+
+networks:
+  hazri-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

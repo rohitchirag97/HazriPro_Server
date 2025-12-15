@@ -25,9 +25,45 @@ enum EmployeeType {
   CONTRACT
 }
 
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  fname      String
+  lname      String
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employeeId String?   @unique
+  employee   Employee? @relation(fields: [employeeId], references: [userId], onDelete: Cascade)
+  companies  Company[]
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  address   String?
+  logo      String?
+  phone     String?
+  email     String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ownerId   String?
+  owner     User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  employees   Employee[]
+  shifts      Shift[]
+  departments Department[]
+}
+
 model Employee {
   id           String       @id @default(uuid())
-  employeeId   String       @unique @default(uuid())
+  employeeId   String       @unique
+  userId       String       @unique
+  user         User?
   fname        String
   lname        String
   phone        String       @unique
@@ -44,23 +80,6 @@ model Employee {
   company      Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-}
-
-model Company {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  address   String?
-  logo      String?
-  phone     String?
-  email     String?
-  website   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  employees   Employee[]
-  shifts      Shift[]
-  departments Department[]
 }
 
 model Shift {
